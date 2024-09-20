@@ -235,99 +235,6 @@ void Rasterizer::UpdateDepthAtPixel(uint32_t x, uint32_t y, Triangle original, T
     return;
 }
 
-// TODO
-// void Rasterizer::ShadeAtPixel(uint32_t x, uint32_t y, Triangle original, Triangle transformed, Image& image)
-// {
-//     glm::vec2 pos(x+0.5f, y+0.5f);
-
-//     // Extract triangle vertices in screen space
-//     glm::vec3 v0(transformed.pos[0].x, transformed.pos[0].y, 0.0f);
-//     glm::vec3 v1(transformed.pos[1].x, transformed.pos[1].y, 0.0f);
-//     glm::vec3 v2(transformed.pos[2].x, transformed.pos[2].y, 0.0f);
-//     glm::vec3 pos3(pos, 0.0f);
-
-//     // Check if the point is inside the triangle using IsPointInsideTriangle
-//     if (!IsPointInsideTriangle(pos3, v0, v1, v2)){
-//         return;
-//     }
-//     glm::vec3 bary = BarycentricCoordinate(pos, transformed);
-
-//     float depth = glm::dot(bary, glm::vec3(original.pos[0].z, original.pos[1].z, original.pos[2].z));
-//     std::optional<float> currentdepth = this->ZBuffer.Get(x, y);
-//     if (depth == currentdepth){
-        
-//         glm::vec3 worldPos0 = glm::vec3(original.pos[0]); // Discard the w component
-//         glm::vec3 worldPos1 = glm::vec3(original.pos[1]);
-//         glm::vec3 worldPos2 = glm::vec3(original.pos[2]);
-    
-//         // Interpolate world-space position
-//         glm::vec3 worldPos = bary.x * worldPos0 + bary.y * worldPos1 + bary.z * worldPos2;
-    
-//         glm::vec3 normal0 = original.normal[0];
-//         glm::vec3 normal1 = original.normal[1];
-//         glm::vec3 normal2 = original.normal[2];
-    
-//         glm::vec3 normal = bary.x * normal0 + bary.y * normal1 + bary.z * normal2;
-//         normal = glm::normalize(normal);
-    
-//         std::vector<Light> lights = this->loader.GetLights();
-//         Color ambient = this->loader.GetAmbientColor();
-//         float specularExponent = this->loader.GetSpecularExponent();
-//         glm::vec3 cameraPos = this->loader.GetCamera().pos;
-    
-//         glm::vec3 color = glm::vec3(ambient.r, ambient.g, ambient.b);
-    
-//         for (const Light& light : lights)
-//         {
-//             glm::vec3 lightPos = light.pos; // Assuming 'pos' is the position in 'Light'
-//             glm::vec3 lightColor = glm::vec3(light.color.r, light.color.g, light.color.b);
-//             float lightIntensity = light.intensity;
-    
-//             // Compute vectors for shading
-//             glm::vec3 lightDir = glm::normalize(lightPos - worldPos);
-//             glm::vec3 viewDir = glm::normalize(cameraPos - worldPos);
-//             glm::vec3 halfVector = glm::normalize(lightDir + viewDir);
-    
-//             // Distance attenuation
-//             float distanceSquared = glm::dot(lightPos - worldPos, lightPos - worldPos);
-//             float attenuation = 1.0f / distanceSquared;
-    
-//             // Compute NdotL and NdotH as floats
-//             float NdotL = glm::max(glm::dot(normal, lightDir), 0.0f);
-//             float NdotH = glm::max(glm::dot(normal, halfVector), 0.0f);
-    
-//             float specularExponent = static_cast<float>(this->loader.GetSpecularExponent());
-//              // Now compute diffuse and specular components
-//             glm::vec3 diffuse = lightColor * lightIntensity * attenuation * NdotL;
-//             float specularFactor = powf(NdotH, specularExponent);
-//             glm::vec3 specular = lightColor * lightIntensity * attenuation * specularFactor;
-//             // Accumulate color contributions
-//             color += diffuse + specular;
-//         }
-//         // Clamp the final color to [0, 1]
-//         color = glm::clamp(color, 0.0f, 1.0f);
-    
-//         // Step 8: Write the Color to the Image Buffer
-//         Color result(color);
-//         image.Set(x, y, result);
-
-//     }
-
-//     return;
-// }
-glm::vec3 CalculateCoordsWithBarycentric(glm::vec3 barycentric, std::array<glm::vec4, 3> original)
-{
-    glm::vec3 coords = barycentric.x * glm::vec3(original[0]) + barycentric.y * glm::vec3(original[1]) + barycentric.z * glm::vec3(original[2]);
-    return coords;
-}
-
-
-glm::vec3 CalculateNormal(glm::vec3 barycentric, Triangle original)
-{
-    glm::vec3 normal = CalculateCoordsWithBarycentric(barycentric, original.normal);
-    return glm::normalize(normal);
-}
-
 Color CalculateColor_BlinnPhong(glm::vec3 pos, glm::vec3 normal, glm::vec3 view_pos, std::vector<Light> lights, Color ambient, float specularExponent)
 {
     Color result = Color(0.0f, 0.0f, 0.0f, 0.0f);
@@ -400,21 +307,64 @@ void Rasterizer::ShadeAtPixel(uint32_t x, uint32_t y, Triangle original, Triangl
 
     if (IsPointInsideTriangle(pos3, v0, v1, v2))
     {
-        glm::vec3 barycentric = BarycentricCoordinate(glm::vec2(x + 0.5, y + 0.5), transformed);           // Bug Fix: x + 0.5, y + 0.5, or the pixel will be at the top-left corner of the triangle
+        glm::vec3 bary = BarycentricCoordinate(glm::vec2(x + 0.5, y + 0.5), transformed);           // Bug Fix: x + 0.5, y + 0.5, or the pixel will be at the top-left corner of the triangle
 
         // Calculate the original depth of the pixel
-        depth = glm::dot(barycentric, glm::vec3(original.pos[0].z, original.pos[1].z, original.pos[2].z));
+        depth = glm::dot(bary, glm::vec3(original.pos[0].z, original.pos[1].z, original.pos[2].z));
 
         if (depth == this->ZBuffer.Get(x, y))
         {
             // Calculate the normal of the pixel
-            glm::vec3 normal = CalculateNormal(barycentric, original);
+            glm::vec3 normal = bary.x * glm::vec3(original.normal[0]) + bary.y * glm::vec3(original.normal[1]) + bary.z * glm::vec3(original.normal[2]);
+            normal = glm::normalize(normal);
 
-            glm::vec3 original_coords = CalculateCoordsWithBarycentric(barycentric, original.pos);
+            glm::vec3 original_coords = bary.x * glm::vec3(original.pos[0]) + bary.y * glm::vec3(original.pos[1]) + bary.z * glm::vec3(original.pos[2]);
 
-            // glm::vec3 view_pos = glm::normalize(cam_pos);
 
-            result = CalculateColor_BlinnPhong(original_coords, normal, cam_pos, lights, ambient, specularExponent);
+            Color result = Color(0.0f, 0.0f, 0.0f, 0.0f);
+            glm::vec3 lightDir;
+            glm::vec3 half;
+            float diffuse;
+            float specular;
+            Color ambientColor = ambient;
+            Color diffuseColor;
+            Color specularColor;
+            glm::vec3 view = glm::normalize(cam_pos - original_coords);
+
+            float diffuse_decay;
+            float specular_decay;
+            result = ambientColor;
+
+            specularExponent = specularExponent;
+            for (auto& light : lights)
+            {
+                // Calculate the light direction
+                lightDir = glm::normalize(light.pos - original_coords);
+
+                // Calculate the half vector
+                half = glm::normalize(lightDir + view);
+
+                // Calculate the diffuse term
+                diffuse = glm::max(glm::dot(normal, lightDir), 0.0f);
+
+                // Calculate the specular term
+                specular = glm::pow(glm::max(glm::dot(normal, half), 0.0f), specularExponent);
+
+                // Calculate the light decay
+                diffuse_decay = light.intensity / (glm::length(light.pos - original_coords) * glm::length(light.pos - original_coords));
+
+                // Calculate the diffuse term
+                diffuseColor = diffuse_decay * light.color * diffuse ;
+
+                // Calculate the specular decay
+                specular_decay = light.intensity / (glm::length(light.pos - original_coords) * glm::length(light.pos - original_coords));
+
+                // Calculate the specular term
+                specularColor = specular_decay* light.color * specular;
+
+                // Calculate the final color
+                result = diffuseColor + specularColor + result;
+            }
 
             image.Set(x, y, result);
         }
