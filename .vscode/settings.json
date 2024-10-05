@@ -56,7 +56,10 @@
         "streambuf": "cpp",
         "text_encoding": "cpp",
         "typeinfo": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "chrono": "cpp",
+        "codecvt": "cpp",
+        "ratio": "cpp"
     },
     "cmake.sourceDirectory": "C:/Users/xiaol/Desktop/CG-Gen/HW2"
 }

@@ -1,0 +1,32 @@
+[
+{
+  "directory": "C:/Users/xiaol/Desktop/CG-Gen/build",
+  "command": "C:\\PROGRA~1\\mingw64\\bin\\G__~1.EXE   -g -std=gnu++17 -o CMakeFiles\\RayTracing.dir\\main.cpp.obj -c C:\\Users\\xiaol\\Desktop\\CG-Gen\\HW2\\main.cpp",
+  "file": "C:/Users/xiaol/Desktop/CG-Gen/HW2/main.cpp",
+  "output": "CMakeFiles/RayTracing.dir/main.cpp.obj"
+},
+{
+  "directory": "C:/Users/xiaol/Desktop/CG-Gen/build",
+  "command": "C:\\PROGRA~1\\mingw64\\bin\\G__~1.EXE   -g -std=gnu++17 -o CMakeFiles\\RayTracing.dir\\Scene.cpp.obj -c C:\\Users\\xiaol\\Desktop\\CG-Gen\\HW2\\Scene.cpp",
+  "file": "C:/Users/xiaol/Desktop/CG-Gen/HW2/Scene.cpp",
+  "output": "CMakeFiles/RayTracing.dir/Scene.cpp.obj"
+},
+{
+  "directory": "C:/Users/xiaol/Desktop/CG-Gen/build",
+  "command": "C:\\PROGRA~1\\mingw64\\bin\\G__~1.EXE   -g -std=gnu++17 -o CMakeFiles\\RayTracing.dir\\Accel.cpp.obj -c C:\\Users\\xiaol\\Desktop\\CG-Gen\\HW2\\Accel.cpp",
+  "file": "C:/Users/xiaol/Desktop/CG-Gen/HW2/Accel.cpp",
+  "output": "CMakeFiles/RayTracing.dir/Accel.cpp.obj"
+},
+{
+  "directory": "C:/Users/xiaol/Desktop/CG-Gen/build",
+  "command": "C:\\PROGRA~1\\mingw64\\bin\\G__~1.EXE   -g -std=gnu++17 -o CMakeFiles\\RayTracing.dir\\Math.cpp.obj -c C:\\Users\\xiaol\\Desktop\\CG-Gen\\HW2\\Math.cpp",
+  "file": "C:/Users/xiaol/Desktop/CG-Gen/HW2/Math.cpp",
+  "output": "CMakeFiles/RayTracing.dir/Math.cpp.obj"
+},
+{
+  "directory": "C:/Users/xiaol/Desktop/CG-Gen/build",
+  "command": "C:\\PROGRA~1\\mingw64\\bin\\G__~1.EXE   -g -std=gnu++17 -o CMakeFiles\\RayTracing.dir\\Ray.cpp.obj -c C:\\Users\\xiaol\\Desktop\\CG-Gen\\HW2\\Ray.cpp",
+  "file": "C:/Users/xiaol/Desktop/CG-Gen/HW2/Ray.cpp",
+  "output": "CMakeFiles/RayTracing.dir/Ray.cpp.obj"
+}
+]
