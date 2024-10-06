@@ -12,8 +12,13 @@ Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
         assert (ray.isNormalized());
     }
     if (bouncesLeft < 0) return {};
+    Intersection inter = getIntersection(ray);
+    if (!inter.happened) {
+        return {}; // Return zero vector if the ray doesn't hit any object
+    }
 
-    // TODO...
+    // Step 4: Return the diffuse color of the intersected object
+    return inter.getDiffuseColor();
     
     return {};
 }
