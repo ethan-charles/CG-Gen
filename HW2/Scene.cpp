@@ -13,14 +13,22 @@ Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
     }
     if (bouncesLeft < 0) return {};
     Intersection inter = getIntersection(ray);
-    if (!inter.happened) {
-        return {}; // Return zero vector if the ray doesn't hit any object
+
+    if (!inter.happened) return {};
+
+    Vec3 randomDir = Random::randomHemisphereDirection(inter.getNormal());
+    Ray randomRay = {inter.pos, randomDir};
+    Intersection randominter = getIntersection(randomRay); 
+
+    Vec3 accumulatedRadiance = Vec3(0.0f, 0.0f, 0.0f);
+    if (secondinter.happened) {
+        float pdf = 1.0f / (2.0f * PI);
+        Vec3 brdf = inter.calcBRDF(-randomDir, -ray.dir);
+        float cosineTerm = randomDir.dot(inter.getNormal());
+        accumulatedRadiance += 1 / pdf * randominter.getEmission() * brdf * cosineTerm;
     }
 
-    // Step 4: Return the diffuse color of the intersected object
-    return inter.getDiffuseColor();
-    
-    return {};
+    return inter.getEmission() + accumulatedRadiance;
 }
 
 tinyobj::ObjReader Scene::reader {};
