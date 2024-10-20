@@ -6,6 +6,8 @@
 #include "loader.hpp"
 #include <cstdint>
 
+#include "ZBufferSamples.hpp"
+
 class Rasterizer
 {
 public:
@@ -112,6 +114,9 @@ public:
      * The default value for the ZBuffer during initialization.
      */
     static float zBufferDefault;
+
+    // Add ZBufferSamples for MSAA
+    ZBufferSamples ZBufferSamples;
 };
 
 #endif

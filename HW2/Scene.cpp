@@ -6,7 +6,54 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
+// Task 5
+/*
+Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
+    if constexpr(DEBUG) {
+        assert (ray.isNormalized());
+    }
+    if (bouncesLeft < 0) return {};
+    Intersection inter = getIntersection(ray);
+    if (!inter.happened) return {};
+    
+    return inter.getDiffuseColor();
+}
+*/
 
+//Task 6
+/*
+Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
+    if constexpr(DEBUG) {
+        assert (ray.isNormalized());
+    }
+    if (bouncesLeft < 0) return {};
+    Intersection inter = getIntersection(ray);
+
+    if (!inter.happened) return {};
+    
+    Vec3 Lo(0.0f, 0.0f, 0.0f);
+    if (!discardEmission) {
+        Lo += inter.getEmission();
+    }
+
+    Vec3 randomDir = Random::randomHemisphereDirection(inter.getNormal());
+    Ray randomRay = {inter.pos, randomDir};
+    Intersection randominter = getIntersection(randomRay); 
+
+    Vec3 Li = Vec3(0.0f, 0.0f, 0.0f);
+    if (randominter.happened) {
+        float pdf = 1.0f / (2.0f * PI);
+        Vec3 brdf = inter.calcBRDF(-randomDir, -ray.dir);
+        float cosineTerm = randomDir.dot(inter.getNormal());
+        Li += 1 / pdf * randominter.getEmission() * brdf * cosineTerm;
+    }
+
+    return Lo + Li;
+}
+*/
+
+//Task 7
+/*
 Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
     if constexpr(DEBUG) {
         assert (ray.isNormalized());
@@ -17,18 +64,81 @@ Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
     if (!inter.happened) return {};
 
     Vec3 randomDir = Random::randomHemisphereDirection(inter.getNormal());
-    Ray randomRay = {inter.pos, randomDir};
-    Intersection randominter = getIntersection(randomRay); 
+    Ray nextRay(inter.pos, randomDir);
+    Intersection randominter = getIntersection(nextRay); 
 
-    Vec3 accumulatedRadiance = Vec3(0.0f, 0.0f, 0.0f);
-    if (secondinter.happened) {
+    Vec3 Lo(0.0f, 0.0f, 0.0f);
+    if (!discardEmission) {
+        Lo += inter.getEmission();
+    }
+    
+    if (randominter.happened) {
         float pdf = 1.0f / (2.0f * PI);
         Vec3 brdf = inter.calcBRDF(-randomDir, -ray.dir);
         float cosineTerm = randomDir.dot(inter.getNormal());
-        accumulatedRadiance += 1 / pdf * randominter.getEmission() * brdf * cosineTerm;
+        
+        Vec3 Li = trace(nextRay, bouncesLeft - 1, false);
+        Lo += 1 / pdf * Li * brdf * cosineTerm;
     }
 
-    return inter.getEmission() + accumulatedRadiance;
+    return Lo;
+}
+*/
+
+//Task 8
+Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
+    if constexpr(DEBUG) {
+        assert (ray.isNormalized());
+    }
+    if (bouncesLeft < 0) return {};
+    Intersection inter = getIntersection(ray);
+
+    if (!inter.happened) return {};
+
+    Vec3 Lo(0.0f, 0.0f, 0.0f);
+    if (!discardEmission) {
+        Lo += inter.getEmission();
+    }
+
+    Vec3 indirectRadiance(0.0f, 0.0f, 0.0f);
+
+    Vec3 randomDir = Random::cosWeightedHemisphere(inter.getNormal());  
+    Ray randomRay(inter.pos, randomDir);
+    Intersection bounceInter = getIntersection(randomRay);
+
+    if (bounceInter.happened) {
+        Vec3 Li = trace(randomRay, bouncesLeft - 1, true);
+        Vec3 brdf = inter.calcBRDF(-randomDir, -ray.dir);
+        float cosineTerm = randomDir.dot(inter.getNormal());
+        float pdf = cosineTerm / PI;
+        indirectRadiance = (Li * brdf * cosineTerm) / pdf;
+    }
+
+    Vec3 directRadiance(0.0f, 0.0f, 0.0f);
+
+    Intersection lightSample = sampleLight();
+    Vec3 lightDir = lightSample.pos - inter.pos;
+    float distanceToLight = lightDir.getLength();
+    lightDir.normalize();
+
+    Ray rayToLight = {inter.pos, lightDir};
+    Intersection lightInter = getIntersection(rayToLight);
+
+    if (lightInter.happened && (lightInter.object == lightSample.object)) {
+
+        Vec3 brdf = inter.calcBRDF(-lightDir, -ray.dir);
+        float cosineTerm = lightDir.dot(inter.getNormal());
+        float lightCosineTerm = -lightDir.dot(lightSample.getNormal());
+
+        float pdfLightSample = 1.0f / lightArea;
+        float attenuation = 1.0f / (distanceToLight * distanceToLight);
+
+        directRadiance = (lightSample.getEmission() * brdf * cosineTerm * lightCosineTerm * attenuation) / pdfLightSample;
+    }
+
+    Lo += indirectRadiance + directRadiance;
+
+    return Lo;
 }
 
 tinyobj::ObjReader Scene::reader {};
