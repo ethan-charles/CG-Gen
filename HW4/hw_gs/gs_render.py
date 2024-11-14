@@ -182,9 +182,7 @@ def build_covariance_2d(mean3d, cov3d, viewmatrix, fov_x, fov_y, focal_x, focal_
 
     # cov2d = ...
     # Ensure W is broadcasted to match the batch size of J and cov3d
-    W = W.expand(mean3d.shape[0], -1, -1)  # Assuming mean3d.shape[0] is B
-    
-    # Matrix multiplication with correct broadcasting
+    W = W.expand(mean3d.shape[0], -1, -1)
     cov2d = J @ W @ cov3d @ W.transpose(1, 2) @ J.transpose(1, 2)
     #############################################################################
     #                             END OF YOUR CODE                              #
@@ -334,35 +332,23 @@ class GaussRenderer(nn.Module):
                 # tile_color = ... # Hint: Check Eq. (5) in the instruction pdf
                 # tile_depth = ... # Hint: Check Eq. (7) in the instruction pdf
                 
-                quad_form = torch.einsum('bpi,pij,bpj->bp', dx, sorted_inverse_conv, dx)
-                gauss_weight = torch.exp(-0.5 * quad_form)
-                # Step 4: Calculate alpha values
-                alpha = (gauss_weight * sorted_opacity[None, :, 0]).clip(max=0.99)  # [B, P]
+                
+                gauss_weight = torch.exp(-0.5 * torch.einsum("bpi,pij,bpj->bp", dx, sorted_inverse_conv, dx))
+                # Step 2: Calculate alpha values
+                alpha = (gauss_weight[..., None] * sorted_opacity[None]).clip(max=0.99)
 
-                # Step 5: Calculate accumulated transparency T and alpha for color and depth blending
-                epsilon = 1e-10  # Small value to prevent numerical issues
-                one_minus_alpha = 1 - alpha + epsilon
-                cumprod_one_minus_alpha = torch.cumprod(one_minus_alpha, dim=1)
+                # Step 3: Calculate accumulated transparency T and alpha
+                epsilon = 1e-10
+                oma = 1 - alpha + epsilon
+                cumprod_oma = torch.cumprod(oma, dim=1)
                 # Shift T to the right and set the first element to 1
-                T = torch.cat([torch.ones_like(alpha[:, :1]), cumprod_one_minus_alpha[:, :-1]], dim=1)
-
-                # Step 6: Compute tile color and depth
-                # Compute color with accumulated alpha
+                T = torch.cat([torch.ones_like(alpha[:, :1]), cumprod_oma[:, :-1]], dim=1)
+                
                 Cbg = torch.tensor([1.0, 1.0, 1.0], device="cuda") if self.white_bkgd else torch.tensor([0.0, 0.0, 0.0], device="cuda")
 
-                # Step 4: Compute accumulated alpha
-                acc_alpha = torch.sum(alpha * T, dim=1, keepdim=True)  # [B, 1]
-                
-                # Step 5: Compute tile color
-                tile_color = torch.sum(T[..., None] * alpha[..., None] * sorted_color[None, :, :], dim=1)  # [B, 3]
-                # Add background color
-                tile_color += (1 - acc_alpha) * Cbg
-                
-                # Step 6: Compute tile depth
-                tile_depth = torch.sum(T * alpha * sorted_depths[None, :], dim=1, keepdim=True) / (acc_alpha + epsilon)  # [B, 1]
-
-
-
+                acc_alpha = torch.sum(alpha * T, dim=1, keepdim=True)
+                tile_color = torch.sum(T * alpha * sorted_color, dim=1, keepdim=True) + (1 - acc_alpha) * Cbg
+                tile_depth = torch.sum(T * alpha * sorted_depths[..., None], dim=1, keepdim=True)
                 #############################################################################
                 #                             END OF YOUR CODE                              #
                 #############################################################################

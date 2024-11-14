@@ -71,21 +71,11 @@ def train(rawData, model, optimizer, n_iters=3000):
         # optimizer.step() # do update
         # Compute the rays for the selected image.
         rays_o, rays_d = get_rays(H, W, focal, pose)
-
-        # Render the scene using the current model state.
         rgb, depth = render(model, rays_o, rays_d, near=2., far=6., n_samples=n_samples)
 
-        # Reshape rgb to [H, W, 3] to match the target image shape
-        # Zero the gradients
         optimizer.zero_grad()
-
-        # Compute the loss using Mean Squared Error (MSE)
         image_loss = F.mse_loss(rgb, target)
-
-        # Backpropagate the loss
         image_loss.backward()
-
-        # Update the model parameters
         optimizer.step()
         #############################################################################
         #                             END OF YOUR CODE                              #

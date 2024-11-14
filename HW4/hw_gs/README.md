@@ -21,9 +21,8 @@ ssh -L 8090:localhost:8090 nechy@greatlakes.arc-ts.umich.edu
 ```
 - On the login node, run:
 ```
-ssh -L 8090:localhost:8090 gl1514.arc-ts.umich.edu
+ssh -L 8090:localhost:8090 gl1020.arc-ts.umich.edu
 ```
-
 gl1514.arc-ts.umich.edu
 
 - On the Computing Node, run:

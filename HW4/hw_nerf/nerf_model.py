@@ -42,31 +42,23 @@ def get_rays(H, W, focal, pose):
     u = u.to(device)
     v = v.to(device)
 
-    # Convert W, H, and focal to tensors on the device
     W_t = torch.tensor(W, dtype=torch.float32, device=device)
     H_t = torch.tensor(H, dtype=torch.float32, device=device)
     focal_t = torch.tensor(focal, dtype=torch.float32, device=device)
 
-    # Compute normalized image coordinates
     dirs = torch.stack(
         [
-            (u - W_t * 0.5) / focal_t,         # x component
-            -(v - H_t * 0.5) / focal_t,        # y component (flip the y-axis)
-            -torch.ones_like(u, device=device)  # z component (looking towards -z)
+            (u - W_t * 0.5) / focal_t,
+            -(v - H_t * 0.5) / focal_t,
+            -torch.ones_like(u, device=device)
         ],
         dim=-1
     )
 
     # Step 2: Transform the direction vectors (dirs) from camera coordinates to world coordinates.
     # The provided pose is camera-to-world matrix. Please note the expected rays_d should have the shape of [N, 3], where N is the number of rays.
-
-    # Reshape dirs to [N, 3] where N = H * W
-    dirs = dirs.reshape(-1, 3)  # Shape: [N, 3]
-
-    # Transform directions to world coordinates using the rotation part of the pose matrix
-    rays_d = dirs @ pose[:3, :3].T  # Shape: [N, 3]
-
-    # Step 3: Normalize the direction vectors on the last dimension (only 3 channels) to ensure they have unit length.
+    dirs = dirs.reshape(-1, 3)
+    rays_d = dirs @ pose[:3, :3].T
     rays_d = rays_d / torch.norm(rays_d, dim=-1, keepdim=True)  # Shape: [N, 3]
     #############################################################################
     #                             END OF YOUR CODE                              #
@@ -143,12 +135,9 @@ def cumprod_exclusive(tensor: torch.Tensor):
     
     # cumprod = ...
     cumprod = torch.cumprod(tensor, dim=-1)
-    # Roll the elements along the last dimension by one position. Hint: Check torch.roll
-    # This shifts the cumulative products to make them exclusive.
 
     # cumprod = ...
     cumprod = torch.roll(cumprod, shifts=1, dims=-1)
-    # Set the first element of the last dimension to 1, as the exclusive product of the first element is always 1.
     cumprod[..., 0] = 1.0
 
     # Your code here
@@ -215,7 +204,7 @@ def render(model, rays_o, rays_d, near, far, n_samples, rand=False):
     #############################################################################
     # Compute 3D coordinates of the sampled points along the rays.
 
-    points = rays_o[:, None, :] + rays_d[:, None, :] * t[..., None]  # Shape: [N_rays, n_samples, 3]
+    points = rays_o[:, None, :] + rays_d[:, None, :] * t[..., None]
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -256,24 +245,13 @@ def render(model, rays_o, rays_d, near, far, n_samples, rand=False):
 
     # Create a tensor with a large value for the last distance
     one_e_10 = torch.tensor([1e10], dtype=torch.float32).to(device)
-
-    # Compute distances between adjacent samples
-    dists = t[..., 1:] - t[..., :-1]  # Shape: [N_rays, n_samples - 1]
-
-    # Append an infinite distance for the last sample
-    dists = torch.cat([dists, one_e_10.expand(t[..., :1].shape)], -1)  # Shape: [N_rays, n_samples]
-
-    # Compute alpha values using the densities (sigma)
-    alpha = 1.0 - torch.exp(-sigma * dists)  # Shape: [N_rays, n_samples]
-
-    # Compute weights for each sample
-    weights = alpha * cumprod_exclusive(1.0 - alpha + 1e-10)  # Shape: [N_rays, n_samples]
+    dists = t[..., 1:] - t[..., :-1]
+    dists = torch.cat([dists, one_e_10.expand(t[..., :1].shape)], -1)
+    alpha = 1.0 - torch.exp(-sigma * dists)
+    weights = alpha * cumprod_exclusive(1.0 - alpha + 1e-10)
     
-    # Compute the final RGB map by integrating over the samples
-    rgb_map = torch.sum(weights[..., None] * rgb, dim=-2)  # Shape: [N_rays, 3]
-
-    # Compute the depth map
-    depth_map = torch.sum(weights * t, dim=-1)  # Shape: [N_rays]
+    rgb_map = torch.sum(weights[..., None] * rgb, dim=-2)
+    depth_map = torch.sum(weights * t, dim=-1)
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
